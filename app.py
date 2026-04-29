@@ -4,7 +4,11 @@ from entities.account import Account
 from entities.transaction import Transaction
 from entities.user import User
 from dotenv import load_dotenv
+from entities.log import Log
+import enums.log_type as log_type
 import os
+
+from enums.log_type import LogType
 
 load_dotenv()
 app = Flask(__name__)
@@ -63,6 +67,8 @@ def login():
     user = User.check_login(email, password)
     if user:
         login_user(user) # lo guarda en cookies
+
+        Log.save_log(user, "Inicio de sesión", LogType.LOGIN)
 
         return jsonify({
             "success": True,

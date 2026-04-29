@@ -1,14 +1,20 @@
 from persistence.db import get_connection
 from werkzeug.security import generate_password_hash, check_password_hash
 import pymysql
+from enums.profile import Profile
+from entities.permision import Permission
 from flask_login import UserMixin
 
 class User (UserMixin):
-    def __init__(self, id: int, name:str, email:str, password:str):
+    def __init__(self, id: int, name:str, email:str, password:str, profile: Profile, permissions: list, is_active: bool):
         self.id= id
         self.name = name
         self.email = email
         self.password = password
+        self.profile = profile
+        self.permissions = permissions
+        self.is_active = is_active
+
     
     def check_email_exists(email) -> bool:
         """
@@ -66,7 +72,7 @@ class User (UserMixin):
             cursor = connection.cursor(pymysql.cursors.DictCursor)
             
 
-            sql = "SELECT id, name, email, password FROM user WHERE email = %s"
+            sql = "SELECT id, name, email, password, profile, is_active FROM user WHERE email = %s"
             cursor.execute(sql, (email,))
 
             user = cursor.fetchone()
@@ -75,10 +81,12 @@ class User (UserMixin):
             connection.close()
 
             if user and check_password_hash(user["password"], password):
+                permissions = Permission.get_by_id(user["id"])
                 return User(
                     user["id"],
                     user["name"],
                     user["email"],
+
                     ""
                 )
 
@@ -87,7 +95,7 @@ class User (UserMixin):
             print(f"Error login user:{ex}")
             return False
         
-    def get_by_id(id):
+    def get_by_id(id : int):
             try:
                 connection = get_connection()
                 cursor = connection.cursor(pymysql.cursors.DictCursor)
@@ -101,11 +109,14 @@ class User (UserMixin):
                 connection.close()
 
                 if user:
+                    permissions = Permission.get_by_id(user["id"])
                     return User(
                         user["id"],
                         user["name"],
                         user["email"],
-                        user["password"]
+                        user["profile"],
+                        permissions,
+                         user["is_active"]
                     )
 
                 return None
